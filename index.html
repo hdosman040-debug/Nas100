@@ -3,398 +3,197 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forex Journal Pro</title>
-    <!-- Telegram Web App SDK -->
+    <title>Strategy Master</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- TradingView Lightweight Charts Library -->
-    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.umd.js"></script>
     <style>
-        /* Telegram Theme Variables and Basic Styling */
         :root {
             --bg: var(--tg-theme-bg-color, #1a1a1a);
-            --text: var(--tg-theme-text-color, #f0f0f0);
-            --hint: var(--tg-theme-hint-color, #777777);
-            --btn: var(--tg-theme-button-color, #007bff);
+            --text: var(--tg-theme-text-color, #ffffff);
+            --secondary: var(--tg-theme-secondary-bg-color, #252525);
+            --btn: var(--tg-theme-button-color, #2481cc);
             --btn-text: var(--tg-theme-button-text-color, #ffffff);
-            --link: var(--tg-theme-link-color, #007bff);
-            --secondary-bg: var(--tg-theme-secondary-bg-color, #2a2a2a);
+            --hint: var(--tg-theme-hint-color, #aaaaaa);
         }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: var(--bg); 
-            color: var(--text); 
-            padding: 15px; 
-            margin: 0; 
-            line-height: 1.6;
+
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 80px; }
+        
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { font-size: 20px; margin: 0; color: var(--btn); }
+
+        /* Category Selector */
+        .category-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .cat-btn { 
+            background: var(--secondary); border: 2px solid transparent; 
+            padding: 20px 10px; border-radius: 12px; text-align: center; 
+            cursor: pointer; transition: 0.3s;
         }
-        h2, h3 { color: var(--text); border-bottom: 1px solid var(--hint); padding-bottom: 5px; margin-top: 25px; margin-bottom: 15px; }
-        .card { 
-            background: var(--secondary-bg); 
-            padding: 15px; 
-            border-radius: 12px; 
-            margin-bottom: 20px; 
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        .cat-btn.active { border-color: var(--btn); background: rgba(36, 129, 204, 0.1); }
+        .cat-btn span { display: block; font-size: 24px; margin-bottom: 5px; }
+
+        /* Form Area */
+        .card { background: var(--secondary); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+        label { display: block; font-size: 12px; color: var(--hint); margin-bottom: 5px; }
+        input, textarea { 
+            width: 100%; background: var(--bg); border: 1px solid #444; 
+            color: var(--text); padding: 10px; border-radius: 8px; 
+            margin-bottom: 15px; box-sizing: border-box; 
         }
-        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9em; color: var(--hint); }
-        input[type="text"], input[type="number"], select { 
-            width: 100%; 
-            padding: 10px; 
-            margin: 5px 0 15px; 
-            border-radius: 8px; 
-            border: 1px solid var(--hint); 
-            background: var(--bg); 
-            color: var(--text); 
-            box-sizing: border-box;
+
+        /* Image Upload Styling */
+        .upload-area { 
+            border: 2px dashed var(--hint); padding: 20px; 
+            text-align: center; border-radius: 12px; margin-bottom: 15px; 
         }
-        button { 
-            width: 100%; 
-            padding: 12px; 
-            background: var(--btn); 
-            color: var(--btn-text); 
-            border: none; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            font-size: 1.05em;
-            transition: background-color 0.2s ease;
+        #image-preview { width: 100%; border-radius: 8px; display: none; margin-top: 10px; }
+
+        .btn-main { 
+            background: var(--btn); color: var(--btn-text); border: none; 
+            width: 100%; padding: 15px; border-radius: 12px; font-weight: bold; 
         }
-        button:hover {
-            background-color: color-mix(in srgb, var(--btn) 80%, white);
-        }
-                .trade-item { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-            padding: 10px 0; 
-            border-bottom: 1px dashed var(--hint); 
-            font-size: 0.95em;
-        }
-        .trade-item:last-child { border-bottom: none; }
-        .profit { color: #4caf50; font-weight: bold; } /* Green */
-        .loss { color: #f44336; font-weight: bold; }   /* Red */
-        .neutral { color: var(--hint); }
-        .current-price { font-size: 1.2em; font-weight: bold; margin-bottom: 10px; text-align: center; }
-        .progress-bar-container { background: var(--bg); border-radius: 5px; height: 10px; margin-top: 10px; overflow: hidden; }
-        .progress-bar { height: 100%; background: #4caf50; width: 0%; border-radius: 5px; transition: width 0.5s ease-in-out; }
-        .goal-status { text-align: center; font-size: 0.9em; margin-top: 5px; color: var(--hint); }
-        .risk-output { margin-top: 15px; padding: 10px; background: var(--bg); border-radius: 8px; border: 1px solid var(--hint); text-align: center; }
-        #chart-container { height: 250px; background: var(--bg); border-radius: 8px; margin-top: 15px; }
+
+        /* Journal List */   
+
+
+        .journal-entry { background: var(--secondary); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+        .journal-img { width: 100%; display: block; background: #000; }
+        .journal-info { padding: 15px; }
+        .tag { font-size: 10px; padding: 3px 8px; border-radius: 4px; background: var(--btn); margin-bottom: 5px; display: inline-block; }
+        .entry-date { float: right; font-size: 12px; color: var(--hint); }
+        
+        .pnl-pos { color: #4caf50; font-weight: bold; }
+        .pnl-neg { color: #f44336; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <!-- Telegram SDK Initialization and Main Button -->
+    <div class="header">
+        <h1>STRATEGY MASTER</h1>
+        <p style="font-size: 12px; color: var(--hint);">Analyze. Execute. Win.</p>
+    </div>
+
+    <!-- Category Selector -->
+    <div class="category-grid">
+        <div class="cat-btn active" id="btn-forex" onclick="setCategory('Forex')">
+            <span>💱</span> Forex Pairs
+        </div>
+        <div class="cat-btn" id="btn-nas" onclick="setCategory('NAS100')">
+            <span>📈</span> NAS100
+        </div>
+    </div>
+
+    <!-- Entry Form -->
+    <div class="card">
+        <label>Setup Description / Notes</label>
+        <textarea id="notes" rows="2" placeholder="Why did you take this trade?"></textarea>
+
+        <label>Result ($ Profit or Loss)</label>
+        <input type="number" id="result" placeholder="e.g. 150 or -50">
+
+        <label>Chart Screenshot</label>
+        <div class="upload-area" onclick="document.getElementById('file-input').click()">
+            <span id="upload-text">📸 Tap to upload analysis</span>
+            <input type="file" id="file-input" accept="image/*" style="display:none" onchange="previewImage(this)">
+            <img id="image-preview" src="">
+        </div>
+
+        <button class="btn-main" onclick="saveEntry()">LOG ANALYSIS</button>
+    </div>
+
+    <h3>Past Sessions</h3>
+    <div id="journal-list">
+        <!-- Entries appear here -->
+    </div>
+
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.MainButton.text = "Close App";
-        tg.MainButton.show();
-        tg.MainButton.onClick(() => {
-            tg.close();
-        });
 
-        // Use Telegram theme parameters
-        document.documentElement.style.setProperty('--bg', tg.themeParams.bg_color || '#1a1a1a');
-        document.documentElement.style.setProperty('--text', tg.themeParams.text_color || '#f0f0f0');
-        document.documentElement.style.setProperty('--hint', tg.themeParams.hint_color || '#777777');
-        document.documentElement.style.setProperty('--btn', tg.themeParams.button_color || '#007bff');
-        document.documentElement.style.setProperty('--btn-text', tg.themeParams.button_text_color || '#ffffff');
-        document.documentElement.style.setProperty('--link', tg.themeParams.link_color || '#007bff');
+        let currentCategory = 'Forex';
+        let selectedImageBase64 = null;
 
-                document.documentElement.style.setProperty('--secondary-bg', tg.themeParams.secondary_bg_color || '#2a2a2a');
-    </script>
+        function setCategory(cat) {
+            currentCategory = cat; document.getElementById('btn-forex').classList.toggle('active', cat === 'Forex');
+            document.getElementById('btn-nas').classList.toggle('active', cat === 'NAS100');
+            tg.HapticFeedback.impactOccurred('light');
+        }
 
-    <h2>📊 Trading Dashboard</h2>
+        function previewImage(input) {
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                selectedImageBase64 = e.target.result;
+                const preview = document.getElementById('image-preview');
+                preview.src = selectedImageBase64;
+                preview.style.display = 'block';
+                document.getElementById('upload-text').style.display = 'none';
+            }
+            reader.readAsDataURL(file);
+        }
 
-    <!-- Feature 1: Live Price Feed (NAS100) -->
-    <h3>Live Price <span id="current-instrument">NAS100</span></h3>
-    <div class="card">
-        <p class="current-price" id="nas100-price">Fetching...</p>
-        <p class="goal-status">Next update in <span id="price-countdown">10</span>s</p>
-    </div>
+        // --- IndexedDB Logic (To save images locally) ---
+        let db;
+        const request = indexedDB.open("StrategyDB", 1);
+        request.onupgradeneeded = e => {
+            db = e.target.result;
+            db.createObjectStore("entries", { keyPath: "id", autoIncrement: true });
+        };
+        request.onsuccess = e => {
+            db = e.target.result;
+            displayEntries();
+        };
 
-    <!-- Feature 2: Daily Goal Progress -->
-    <h3>Daily Goal Tracker</h3>
-    <div class="card">
-        <label for="daily-goal-input">Daily Profit Goal ($)</label>
-        <input type="number" id="daily-goal-input" value="100" onchange="updateDailyGoal()">
-        <p class="goal-status">Today: <span id="today-profit">$0</span> / <span id="current-goal">$100</span></p>
-        <div class="progress-bar-container">
-            <div class="progress-bar" id="daily-progress-bar"></div>
-        </div>
-    </div>
+        function saveEntry() {
+            const notes = document.getElementById('notes').value;
+            const result = document.getElementById('result').value;
 
-    <!-- Feature 3: Risk Calculator -->
-    <h3>Risk Calculator</h3>
-    <div class="card">
-        <label for="account-balance">Account Balance ($)</label>
-        <input type="number" id="account-balance" value="1000">
-
-        <label for="risk-percentage">Risk per Trade (%)</label>
-        <input type="number" id="risk-percentage" value="1">
-
-        <label for="stop-loss-pips">Stop Loss (Pips)</label>
-        <input type="number" id="stop-loss-pips" value="10">
-
-        <label for="
-
-            pip-value-per-lot">Pip Value per Lot ($)</label>
-        <input type="number" id="pip-value-per-lot" value="10"> <!-- Standard $10 for 1 standard lot EURUSD -->
-
-        <button onclick="calculateLotSize()">Calculate Lot Size</button>
-        <div class="risk-output" id="lot-size-output">
-            Calculated Lot Size: <span class="profit" id="calculated-lot">0.00</span>
-        </div>
-    </div>
-
-    <!-- Feature 4: Simple Chart (TradingView Lightweight Charts) -->
-    <h3>NAS100 Performance (Mock Data)</h3>
-    <div class="card">
-        <div id="chart-container"></div>
-        <p class="goal-status"><i>(Real-time data integration for charts requires a backend or advanced API setup)</i></p>
-    </div>
-
-    <h3>📈 New Trade</h3>
-    <div class="card">
-        <label for="pair">Pair</label>
-        <input type="text" id="pair" placeholder="e.g. NAS100 or EURUSD">
-        
-        <label for="result">Result ($)</label>
-        <input type="number" id="result" placeholder="e.g. 50 or -20">
-        
-        <button onclick="saveTrade()">Log Trade</button>
-    </div>
-
-    <h3>📜 History</h3>
-    <div class="card" id="history">
-        <!-- Trade history will be displayed here -->
-    </div>
-
-    <script>
-        // --- Configuration & Global Variables ---
-        const API_KEY_ALPHAVANTAGE = 'YOUR_ALPHAVANTAGE_API_KEY'; // Get yours at https://www.alphavantage.co/support/#api-key
-        const API_KEY_FINANCIALMODELINGPREP = 'YOUR_FMP_API_KEY'; // Get yours at https://site.financialmodelingprep.com/developer/docs/
-        const REFRESH_INTERVAL_SECONDS = 10;
-        let priceCountdown = REFRESH_INTERVAL_SECONDS;
-        let priceRefreshInterval;
-
-        let trades = JSON.parse(localStorage.getItem('forex_trades')) || [];
-        let dailyGoal = parseFloat(localStorage.getItem('daily_profit_goal')) || 100;
-
-        // --- Live Price Feed ---
-        async function getLivePrice() {
-            // Option 1: Alpha Vantage (requires key, limited for free tier)
-            // const symbol = 'NASDAQ:NDAQ'; // Example: Nasdaq stock, not the index future directly
-            // const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${API_KEY_ALPHAVANTAGE}`;
-            
-            // Option 2: FinancialModelingPrep (requires key, limited free tier for real-time)
-            const instrument = 'SPY'; // S&P 500 ETF, commonly tracks market. NAS100 equivalent index symbols vary by provider.
-            const url = `https://financialmodelingprep.com/api/v3/quote/${instrument}?apikey=${API_KEY_FINANCIALMODELINGPREP}`;
-            
-            // Fallback for demo without API key:
-            if (API_KEY_FINANCIALMODELINGPREP === 'YOUR_FMP_API_KEY' && API_KEY_ALPHAVANTAGE === 'YOUR_ALPHAVANTAGE_API_KEY') {
-                document.getElementById('nas100-price').innerText = (Math.random() * (1000 - 900) + 900).toFixed(2); // Mock price
-                document.getElementById('current-instrument').innerText = 'MOCK_INSTRUMENT';
+            if (!selectedImageBase64 || !result) {
+                tg.showAlert("Please add a screenshot and a result!");
                 return;
+
             }
 
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
-                if (data && data.length > 0 && data[0].price) {
-                    document.getElementById('nas100-price').innerText = parseFloat(data[0].price).toFixed(2);
-                    document.getElementById('current-instrument').innerText = data[0].symbol;
-                } else if (data['Global Quote'] && data['Global Quote']['05. price']) { // Alpha Vantage
-                    document.getElementById('nas100-price').innerText = parseFloat(data['Global Quote']['05. price']).toFixed(2);
-                    document.getElementById('current-instrument').innerText = data['Global Quote']['01. symbol'];
-                } else {
-                    document.getElementById('nas100-price').innerText = 'N/A';
-                    tg.showAlert("Failed to fetch price. Check API key/limits.");
-                }
-            } catch (error) {
-                console.error("Error fetching live price:", error);
-                document.getElementById('nas100-price').innerText = 'Error';
-                tg.showAlert("Error fetching live price. Check console.");
-            }
-        }
-
-        function startPriceRefresh() {
-            clearInterval(priceRefreshInterval); // Clear any existing interval
-            getLivePrice(); // Fetch immediately
-            
-            priceCountdown = REFRESH_INTERVAL_SECONDS;
-            document.getElementById('price-countdown').innerText = priceCountdown;
-
-            priceRefreshInterval = setInterval(() => {
-                priceCountdown--;
-                document.getElementById('price-countdown').innerText = priceCountdown;
-                if (priceCountdown <= 0) {
-                    getLivePrice();
-                    priceCountdown = REFRESH_INTERVAL_SECONDS;
-                    document.getElementById('price-countdown').innerText = priceCountdown;
-                }
-            }, 1000);
-        }
-
-        // --- Daily Goal Progress ---
-        function updateDailyGoal() {
-            const newGoal = parseFloat(document.getElementById('daily-goal-input').value);
-            if (!isNaN(newGoal) && newGoal > 0) {
-                dailyGoal = newGoal;
-                localStorage.setItem('daily_profit_goal', dailyGoal);
-                displayDailyProgress();
-            } else {
-                tg.showAlert("Please enter a valid daily goal.");
-            }
-        }
-
-        function displayDailyProgress() {
-            document.getElementById('daily-goal-input').value = dailyGoal;
-            document.getElementById('current-goal').innerText = `$${dailyGoal}`;
-
-            const today = new Date().toLocaleDateString();
-            const todayTrades = trades.filter(trade => trade.date === today);
-            const todayProfit = todayTrades.reduce((sum, trade) => sum + parseFloat(trade.result), 0);
-
-            document.getElementById('today-profit').innerText = `$${todayProfit.toFixed(2)}`;
-
-            const progressBar = document.getElementById('daily-progress-bar');
-            let progressPercentage = (todayProfit / dailyGoal) * 100;
-            if (progressPercentage < 0) progressPercentage = 0; // Don't show negative progress
-            if (progressPercentage > 100 && todayProfit > 0) progressPercentage = 100; // Cap at 100% if goal reached
-            
-            progressBar.style.width = `${progressPercentage}%`;
-            progressBar.style.backgroundColor = todayProfit >= dailyGoal ? '#4caf50' : (todayProfit < 0 ? '#f44336' : '#FFC107'); // Green, Red, Yellow
-        }
-
-        // --- Risk Calculator ---
-        function calculateLotSize() {
-            const balance = parseFloat(document.getElementById('account-balance').value);
-            const riskPct = parseFloat(document.getElementById('risk-percentage').value) / 100;
-            const stopLossPips = parseFloat(document.getElementById('stop-loss-pips').value);
-            const pipValuePerLot = parseFloat(document.getElementById('pip-value-per-lot').value);
-
-            if (isNaN(balance) || isNaN(riskPct) || isNaN(stopLossPips) || isNaN(pipValuePerLot) || 
-                balance <= 0 || riskPct <= 0 || stopLossPips <= 0 || pipValuePerLot <= 0) {
-                tg.showAlert("Please enter valid positive numbers for all risk calculator fields.");
-                return;
-            }
-
-            const riskAmount = balance * riskPct;const lotSize = riskAmount / (stopLossPips * pipValuePerLot);
-
-            document.getElementById('calculated-lot').innerText = lotSize.toFixed(2);
-        }
-
-        // --- TradingView Lightweight Charts (Mock Data) ---
-        function initChart() {
-            const chartOptions = {
-                layout: {
-                    background: { type: 'solid', color: tg.themeParams.bg_color || '#1a1a1a' },
-                    textColor: tg.themeParams.text_color || '#f0f0f0',
-                },
-                grid: {
-                    vertLines: { color: tg.themeParams.hint_color + '44' || '#77777744' }, // slight transparency
-                    horzLines: { color: tg.themeParams.hint_color + '44' || '#77777744' },
-                },
-                rightPriceScale: {
-                    borderColor: tg.themeParams.hint_color || '#777777',
-                },
-                timeScale: {
-                    borderColor: tg.themeParams.hint_color || '#777777',
-                },
-                localization: {
-                    locale: 'en-US',
-                },
+            const entry = {
+                category: currentCategory,
+                notes: notes,
+                result: parseFloat(result),
+                image: selectedImageBase64,
+                date: new Date().toLocaleDateString()
             };
 
-            const chart = LightweightCharts.createChart(document.getElementById('chart-container'), chartOptions);
-            chart.applyOptions({
-                width: document.getElementById('chart-container').offsetWidth,
-                height: document.getElementById('chart-container').offsetHeight,
-            });
-
-            // Handle resize for responsiveness (important for Telegram Mini Apps)
-            window.addEventListener('resize', () => {
-                chart.applyOptions({
-                    width: document.getElementById('chart-container').offsetWidth,
-                    height: document.getElementById('chart-container').offsetHeight,
-                });
-            });
-
-            const series = chart.addAreaSeries({
-                lineColor: '#2962FF',
-                topColor: 'rgba(41, 98, 255, 0.28)',
-                bottomColor: 'rgba(41, 98, 255, 0.05)',
-            });
-
-            // Mock Data for demonstration
-            const data = [];
-            let time = Date.UTC(2023, 10, 1, 0, 0, 0); // Start date (Nov 1, 2023)
-            let value = 15000;
-            for (let i = 0; i < 60; i++) { // 60 data points
-                value += Math.random() * 50 - 25; // Random fluctuations
-                data.push({ time: time / 1000, value: parseFloat(value.toFixed(2)) }); // Convert ms to seconds
-                time += 24 * 60 * 60 * 1000; // Add one day
-            }
-            series.setData(data);
-            chart.timeScale().fitContent(); // Zoom to fit data
-        }
-
-        // --- Trade Journal Functions ---
-        function saveTrade() {
-            const pairInput = document.getElementById('pair');
-            const resultInput = document.getElementById('result');
-
-            const pair = pairInput.value.trim();
-            const result = parseFloat(resultInput.value);
-
-            if (!pair || isNaN(result)) {
-                tg.showAlert("Please enter a valid pair and numeric result.");
-                return;
-            }
-
-            const newTrade = { 
-                pair: pair.toUpperCase(), 
-                result: result, 
-                date: new Date().toLocaleDateString('en-US') 
+            const transaction = db.transaction(["entries"], "readwrite");
+            transaction.objectStore("entries").add(entry);
+            
+            transaction.oncomplete = () => {
+                tg.showScanQrPopup({text: "Logged!"});
+                setTimeout(() => {
+                    tg.closeScanQrPopup();
+                    location.reload(); // Refresh to show new entry
+                }, 1000);
             };
-            trades.unshift(newTrade); // Add to the beginning of the array
-            localStorage.setItem('forex_trades', JSON.stringify(trades));
-            
-            // Clear inputs
-            pairInput.value = '';
-            resultInput.value = '';
-            
-            displayTrades();
-            displayDailyProgress(); // Update daily progress after saving a trade
-            tg.showScanQrPopup({text: "Trade Logged!"}); 
-            setTimeout(() => tg.closeScanQrPopup(), 1000);
-        }
-function displayTrades() {
-            const container = document.getElementById('history');
-            if (trades.length === 0) {
-                container.innerHTML = `<p style="text-align: center; color: var(--hint);">No trades logged yet.</p>`;
-                return;
-            }
-            container.innerHTML = trades.map(t => `
-                <div class="trade-item">
-                    <span><b>${t.pair}</b> <small style="color: var(--hint);">${t.date}</small></span>
-                    <span class="${t.result >= 0 ? 'profit' : 'loss'}">
-                        ${t.result >= 0 ? '+' : ''}${t.result.toFixed(2)}$
-                    </span>
-                </div>
-            `).join('');
         }
 
-        // --- Initial Load ---
-        document.addEventListener('DOMContentLoaded', () => {
-            displayTrades();
-            displayDailyProgress();
-            calculateLotSize(); // Calculate initial lot size
-            startPriceRefresh(); // Start live price updates
-            initChart(); // Initialize the chart
-        });
+        function displayEntries() {
+            const container = document.getElementById('journal-list');
+            const transaction = db.transaction(["entries"], "readonly");
+            const store = transaction.objectStore("entries");
+            
+            store.getAll().onsuccess = e => {
+                const entries = e.target.result.reverse(); // Newest first
+                container.innerHTML = entries.map(entry => `
+                    <div class="journal-entry">
+                        <img src="${entry.image}" class="journal-img">
+                        <div class="journal-info">
+                            <span class="tag">${entry.category}</span>
+                            <span class="entry-date">${entry.date}</span>
+                            <div style="margin-top:10px;">${entry.notes}</div>
+                            <div class="${entry.result >= 0 ? 'pnl-pos' : 'pnl-neg'}" style="margin-top:10px; font-size: 18px;">
+                                ${entry.result >= 0 ? '+$' : '-$'}${Math.abs(entry.result)}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            };
+        }
     </script>
 </body>
 </html>
-        fu
