@@ -15,6 +15,8 @@
             --hint: var(--tg-theme-hint-color, #aaaaaa);
             --glow-fx: #00ffcc;
             --glow-nas: #ff007f;
+            --bullish-green: #4caf50;
+            --bearish-red: #f44336;
         }
 
         body { 
@@ -26,7 +28,6 @@
             padding-bottom: 80px; 
         }
 
-        /* Utility Hidden Class */
         .hidden { display: none !important; }
 
         /* Splash / Main Menu Interface */
@@ -53,7 +54,6 @@
             letter-spacing: 1px;
         }
         
-        /* Glowing Buttons Layout */
         .menu-grid {
             display: flex;
             flex-direction: column;
@@ -117,6 +117,16 @@
             margin-bottom: 15px; box-sizing: border-box; font-size: 14px;
         }
 
+        /* Long / Short Selector Switches */
+        .direction-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .dir-btn {
+            background: var(--bg); border: 1px solid #444; padding: 12px;
+            border-radius: 8px; text-align: center; font-weight: bold; font-size: 14px;
+            cursor: pointer; color: var(--hint); transition: 0.2s;
+        }
+        .dir-btn.active-long { border-color: var(--bullish-green); color: var(--bullish-green); background: rgba(76, 175, 80, 0.1); }
+        .dir-btn.active-short { border-color: var(--bearish-red); color: var(--bearish-red); background: rgba(244, 67, 54, 0.1); }
+
         /* Checklist Styling */
         .checklist-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
         .check-item { 
@@ -127,13 +137,19 @@
         .check-item input { width: auto; margin: 0 12px 0 0; transform: scale(1.2); }
         .check-item span { font-size: 13px; }
 
-        /* Image Upload Styling */
+        /* Image Upload and Remove Components */
         .upload-area { 
             border: 2px dashed var(--hint); padding: 20px; 
             text-align: center; border-radius: 12px; margin-bottom: 15px; 
             cursor: pointer;
         }
-        .image-preview-el { width: 100%; border-radius: 8px; display: none; margin-top: 10px; }
+        .preview-container { position: relative; display: none; margin-top: 10px; }
+        .image-preview-el { width: 100%; border-radius: 8px; display: block; }
+        .remove-img-btn {
+            position: absolute; top: 10px; right: 10px; background: rgba(244, 67, 54, 0.9);
+            color: white; border: none; padding: 6px 12px; border-radius: 6px;
+            font-size: 11px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
 
         .btn-main { 
             background: var(--btn); color: var(--btn-text); border: none; 
@@ -145,15 +161,23 @@
         .journal-entry { background: var(--secondary); border-radius: 12px; overflow: hidden; margin-bottom: 20px; border: 1px solid #333; }
         .journal-img { width: 100%; display: block; background: #000; }
         .journal-info { padding: 15px; }
+        
         .tag { font-size: 11px; padding: 4px 10px; border-radius: 6px; background: #333; margin-bottom: 8px; display: inline-block; font-weight: bold; color: #fff;}
+        .dir-tag { font-size: 11px; padding: 4px 10px; border-radius: 6px; margin-bottom: 8px; display: inline-block; font-weight: bold; color: #fff; margin-left: 5px; }
+        .dir-tag.long { background: var(--bullish-green); }
+        .dir-tag.short { background: var(--bearish-red); }
+        
         .entry-date { float: right; font-size: 12px; color: var(--hint); margin-top: 4px; }
 
-        /* Confluence list badges */
+        /* Colored notes setup */
+        .notes-display { margin: 8px 0 12px 0; font-size:14px; line-height:1.4; color: var(--bullish-green); font-weight: 500; }
+
         .conf-badge-container { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0; }
         .conf-badge { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.05); color: #bbb; border: 1px solid #444; }
 
-        .pnl-pos { color: #4caf50; font-weight: bold; }
-        .pnl-neg { color: #f44336; font-weight: bold; }
+        /* Conditional colors for metrics text */
+        .pnl-pos { color: var(--bullish-green); font-weight: bold; }
+        .pnl-neg { color: var(--bearish-red); font-weight: bold; }
     </style>
 </head>
 <body>
@@ -169,25 +193,32 @@
         </div>
     </div>
 
-    <!-- SCREEN 2: JOURNAL INTERFACE (DYNAMIC CONTENT) -->
+    <!-- SCREEN 2: JOURNAL INTERFACE -->
     <div id="journal-screen" class="hidden">
         <div class="journal-header">
             <h2 id="journal-title" style="margin:0; font-size:20px; letter-spacing: 0.5px;">JOURNAL</h2>
             <button class="back-btn" onclick="showMainMenu()">⬅ Main Menu</button>
         </div>
 
-        <!-- Logging Form Structure -->
         <div class="card">
             <label>Select Asset / Pair</label>
-            <select id="asset-selector">
-                <!-- Dynamically populated via JS depending on current active view -->
-            </select>
+            <select id="asset-selector"></select>
+
+            <label>Trade Bias / Direction</label>
+            <div class="direction-grid">
+                <div id="dir-long" class="dir-btn active-long" onclick="setDirection('LONG')">🟢 LONG</div>
+                <div id="dir-short" class="dir-btn" onclick="setDirection('SHORT')">🔴 SHORT</div>
+            </div>
 
             <label>Confluence Checklist</label>
             <div class="checklist-container">
                 <label class="check-item">
                     <input type="checkbox" id="conf-liquidity">
-                    <span>Liquidity Sweep (HTF / LTF)</span>
+                    <span id="liq-label">Sell-Side Liquidity (SSL) Sweep</span>
+                </label>
+                <label class="check-item">
+                    <input type="checkbox" id="conf-zone">
+                    <span id="zone-label">Discount Matrix Entry Zone</span>
                 </label>
                 <label class="check-item">
                     <input type="checkbox" id="conf-mss">
@@ -210,34 +241,36 @@
             <input type="number" id="result" placeholder="e.g. 150 or -50">
 
             <label>Chart Screenshot</label>
-            <div class="upload-area" onclick="document.getElementById('file-input').click()">
+            <div class="upload-area" id="upload-box" onclick="document.getElementById('file-input').click()">
                 <span id="upload-text">📸 Tap to upload analysis</span>
                 <input type="file" id="file-input" accept="image/*" style="display:none" onchange="previewImage(this)">
+            </div>
+            
+            <div class="preview-container" id="p-container">
+                <button class="remove-img-btn" onclick="clearUploadedImage(event)">❌ Remove / Replace</button>
                 <img id="image-preview" class="image-preview-el" src="" alt="Preview">
             </div>
 
-            <button class="btn-main" onclick="saveEntry()">LOG ANALYSIS</button>
+            <button class="btn-main" style="margin-top:15px;" onclick="saveEntry()">LOG ANALYSIS</button>
         </div>
 
-        <h3>Past Sessions</h3>
-        <div id="journal-list">
-            <!-- Filtered entries render dynamically here -->
-        </div>
+        <h3>Previous Trades</h3>
+        <div id="journal-list"></div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        let currentView = ''; // Tracks 'Forex' or 'NASDAQ'
+        let currentView = ''; 
+        let tradeDirection = 'LONG'; // Default dynamic assignment
         let selectedImageBase64 = null;
         let db;
 
-        // Assets array per user requirements
         const forexPairs = ['EURUSD', 'GBPUSD', 'AUDCAD'];
         const nasdaqPairs = ['NAS100'];
 
-        // --- IndexedDB Configuration ---
+        // --- IndexedDB Setup ---
         const request = indexedDB.open("StrategyDB", 1);
         request.onupgradeneeded = e => {
             db = e.target.result;
@@ -247,26 +280,42 @@
             db = e.target.result;
         };
 
-        // --- Navigation Mechanics ---
+        // --- Direction Control Switcher (Dynamic checklist modifications) ---
+        function setDirection(dir) {
+            tradeDirection = dir;
+            const longBtn = document.getElementById('dir-long');
+            const shortBtn = document.getElementById('dir-short');
+            const liqText = document.getElementById('liq-label');
+            const zoneText = document.getElementById('zone-label');
+
+            if (dir === 'LONG') {
+                longBtn.classList.add('active-long');
+                shortBtn.classList.remove('active-short');
+                liqText.innerText = "Sell-Side Liquidity (SSL) Sweep";
+                zoneText.innerText = "Discount Matrix Entry Zone";
+            } else {
+                longBtn.classList.remove('active-long');
+                shortBtn.classList.add('active-short');
+                liqText.innerText = "Buy-Side Liquidity (BSL) Sweep";
+                zoneText.innerText = "Premium Matrix Entry Zone";
+            }
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        }
+
         function openJournal(mode) {
             currentView = mode;
-            
-            // Toggle view visibility
             document.getElementById('main-menu').classList.add('hidden');
             document.getElementById('journal-screen').classList.remove('hidden');
             
-            // Set Dynamic Header text
             document.getElementById('journal-title').innerText = mode === 'Forex' ? '💱 FX WORKSPACE' : '📈 NASDAQ WORKSPACE';
             document.getElementById('journal-title').style.color = mode === 'Forex' ? 'var(--glow-fx)' : 'var(--glow-nas)';
 
-            // Rebuild Select Asset element based on active mode
             const selector = document.getElementById('asset-selector');
             const targetPairs = mode === 'Forex' ? forexPairs : nasdaqPairs;
             selector.innerHTML = targetPairs.map(p => `<option value="${p}">${p}</option>`).join('');
 
+            setDirection('LONG'); // Reset selection state on load
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-            
-            // Render past sessions specific to this category view
             displayEntries();
         }
 
@@ -276,6 +325,7 @@
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         }
 
+        // --- Image Handler Actions ---
         function previewImage(input) {
             const file = input.files[0];
             if (!file) return;
@@ -283,35 +333,47 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 selectedImageBase64 = e.target.result;
-                const preview = document.getElementById('image-preview');
-                preview.src = selectedImageBase64;
-                preview.style.display = 'block';
-                document.getElementById('upload-text').style.display = 'none';
+                document.getElementById('image-preview').src = selectedImageBase64;
+                document.getElementById('p-container').style.display = 'block';
+                document.getElementById('upload-box').style.display = 'none';
             }
             reader.readAsDataURL(file);
         }
 
-        // --- Data Layer Logic ---
+        function clearUploadedImage(event) {
+            if(event) event.stopPropagation(); // Stop click pass-through
+            selectedImageBase64 = null;
+            document.getElementById('image-preview').src = '';
+            document.getElementById('p-container').style.display = 'none';
+            document.getElementById('upload-box').style.display = 'block';
+            document.getElementById('file-input').value = ''; // Flush upload instance data
+        }
+
+        // --- Core Execution Layer ---
         function saveEntry() {
             const assetSelected = document.getElementById('asset-selector').value;
             const notes = document.getElementById('notes').value;
             const result = document.getElementById('result').value;
 
             if (!selectedImageBase64 || !result) {
-                tg.showAlert("Please add a screenshot and a result payload!");
+                tg.showAlert("Please add a screenshot and a result execution payload!");
                 return;
             }
 
             const confluences = {
                 liquidity: document.getElementById('conf-liquidity').checked,
+                zone: document.getElementById('conf-zone').checked,
                 mss: document.getElementById('conf-mss').checked,
                 fvg: document.getElementById('conf-fvg').checked,
-                smt: document.getElementById('conf-smt').checked
+                smt: document.getElementById('conf-smt').checked,
+                liqType: tradeDirection === 'LONG' ? 'SSL Sweep' : 'BSL Sweep',
+                zoneType: tradeDirection === 'LONG' ? 'Discount Zone' : 'Premium Zone'
             };
 
             const entry = {
-                viewGroup: currentView, // Separator label ('Forex' or 'NASDAQ')
+                viewGroup: currentView, 
                 asset: assetSelected,
+                direction: tradeDirection,
                 confluences: confluences,
                 notes: notes,
                 result: parseFloat(result),
@@ -323,23 +385,20 @@
             transaction.objectStore("entries").add(entry);
 
             transaction.oncomplete = () => {
-                // Clear UI fields cleanly
+                // Wipe form components clean
                 document.getElementById('notes').value = '';
                 document.getElementById('result').value = '';
-                document.getElementById('image-preview').style.display = 'none';
-                document.getElementById('image-preview').src = '';
-                document.getElementById('upload-text').style.display = 'block';
+                clearUploadedImage(null);
                 
                 document.getElementById('conf-liquidity').checked = false;
+                document.getElementById('conf-zone').checked = false;
                 document.getElementById('conf-mss').checked = false;
                 document.getElementById('conf-fvg').checked = false;
                 document.getElementById('conf-smt').checked = false;
-                
-                selectedImageBase64 = null;
 
                 tg.showPopup({
-                    title: 'Analysis Saved!',
-                    message: `Stored securely inside your local ${currentView} workspace feed.`,
+                    title: 'Trade Logged!',
+                    message: 'Execution metrics parsed into offline structural storage.',
                     buttons: [{type: 'ok'}]
                 });
 
@@ -355,45 +414,48 @@
             const store = transaction.objectStore("entries");
 
             store.getAll().onsuccess = e => {
-                // Only filter matching items built for this explicit folder view
                 const entries = e.target.result
                     .filter(item => item.viewGroup === currentView)
                     .reverse(); 
                 
                 if (entries.length === 0) {
-                    container.innerHTML = `<p style="text-align:center; color:var(--hint); font-size:14px; padding: 20px 0;">No saved ${currentView} sessions detected here.</p>`;
+                    container.innerHTML = `<p style="text-align:center; color:var(--hint); font-size:14px; padding: 20px 0;">No saved ${currentView} executions detected here.</p>`;
                     return;
                 }
 
                 container.innerHTML = entries.map(entry => {
                     let badgesHtml = '';
                     if (entry.confluences) {
-                        if (entry.confluences.liquidity) badgesHtml += '<span class="conf-badge">🎯 Liq Sweep</span>';
+                        if (entry.confluences.liquidity) badgesHtml += `<span class="conf-badge">🎯 ${entry.confluences.liqType || 'Liq Sweep'}</span>`;
+                        if (entry.confluences.zone) badgesHtml += `<span class="conf-badge">💎 ${entry.confluences.zoneType || 'Matrix Zone'}</span>`;
                         if (entry.confluences.mss) badgesHtml += '<span class="conf-badge">📉 MSS</span>';
                         if (entry.confluences.fvg) badgesHtml += '<span class="conf-badge">⚡ FVG</span>';
                         if (entry.confluences.smt) badgesHtml += '<span class="conf-badge">🔀 SMT</span>';
                     }
 
-                    // Structure design updated: Note descriptions render strictly ABOVE the screenshots
+                    const isWin = entry.result >= 0;
+
                     return `
                         <div class="journal-entry">
                             <div class="journal-info">
                                 <span class="tag" style="border: 1px solid ${currentView === 'Forex' ? 'var(--glow-fx)' : 'var(--glow-nas)'}">${entry.asset}</span>
+                                <span class="dir-tag ${entry.direction === 'LONG' ? 'long' : 'short'}">${entry.direction}</span>
                                 <span class="entry-date">${entry.date}</span>
                                 
-                                <div style="margin: 8px 0 12px 0; font-size:14px; line-height:1.4; color:#ffffff; font-weight: 500;">
-                                    ${entry.notes ? entry.notes : '<em style="color:var(--hint);">No notes specified for this run.</em>'}
+                                <!-- Description Note rendered in pure Green above chart screenshot -->
+                                <div class="notes-display">
+                                    ${entry.notes ? entry.notes : '<em>No strategic note details saved.</em>'}
                                 </div>
 
                                 <div class="conf-badge-container">
-                                    ${badgesHtml || '<span class="conf-badge" style="color:var(--hint)">No formal confluences logged</span>'}
+                                    ${badgesHtml || '<span class="conf-badge" style="color:var(--hint)">No formal confluences selected</span>'}
                                 </div>
                                 
-                                <div class="${entry.result >= 0 ? 'pnl-pos' : 'pnl-neg'}" style="margin-top:5px; font-size: 16px;">
-                                    ${entry.result >= 0 ? '+$' : '-$'}${Math.abs(entry.result)}
+                                <div class="${isWin ? 'pnl-pos' : 'pnl-neg'}" style="margin-top:5px; font-size: 16px;">
+                                    ${isWin ? '+$' : '-$'}${Math.abs(entry.result)}
                                 </div>
                             </div>
-                            <img src="${entry.image}" class="journal-img" alt="Chart Setup Screenshot">
+                            <img src="${entry.image}" class="journal-img" alt="Chart Execution Metrics">
                         </div>
                     `;
                 }).join('');
